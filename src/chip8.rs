@@ -62,7 +62,7 @@ impl Chip8 {
         let start = 0x0200;
 
         if bytes.len() > self.mem.len() - start {
-            panic!("ROM is too big")
+            panic!("ROM is too big");
         }
 
         self.pc = start as u16;
@@ -78,7 +78,7 @@ impl Chip8 {
     pub fn tick(&mut self) {
         // check if pc overflow
         if self.pc >= MEM_SIZE as u16 {
-            panic!("PC points outside of the memory")
+            panic!("PC points outside of the memory");
         }
 
         // fetch opcode
@@ -103,7 +103,10 @@ impl Chip8 {
 
                 // 00EE - Returns from a subroutine.
                 0x00EE => {
-                    //TODO
+                    if self.sp == 0 {
+                        panic!("Stack is empty, cannot return from subroutine");
+                    }
+                    self.pc = self.stack[(self.sp - 1) as usize] + 2;
                 }
 
                 // 0NNN - Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN.
@@ -118,7 +121,12 @@ impl Chip8 {
 
             // 2NNN - Calls subroutine at NNN.
             0x2000 => {
-                //TODO
+                if self.sp >= STACK_SIZE as u16 {
+                    panic!("Stack is full, cannot call subroutine");
+                }
+                self.stack[self.sp as usize] = self.pc;
+                self.pc = self.opcode & 0x0FFF;
+                self.sp += 1;
             }
 
             // 3XNN - Skips next instruction if VX equals NN.
