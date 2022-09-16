@@ -18,7 +18,9 @@ fn main() {
 
     // Chip8 system
     let mut chip8 = chip8::init();
-    chip8.load_rom(std::fs::read("roms/programs/IBM Logo.ch8").unwrap());
+    //chip8.load_rom(std::fs::read("roms/programs/IBM Logo.ch8").unwrap());
+    //chip8.load_rom(std::fs::read("roms/demos/Stars [Sergey Naydenov, 2010].ch8").unwrap());
+    chip8.load_rom(std::fs::read("roms/demos/Maze [David Winter, 199x].ch8").unwrap());
 
     // Emulation loop
     while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
