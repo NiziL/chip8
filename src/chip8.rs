@@ -90,7 +90,7 @@ impl Chip8 {
         match self.opcode & 0xF000 {
             0x0000 => match self.opcode & 0x0FFF {
                 // 0000 - No operation.
-                // not in official chip8 instruction set
+                // not in official chip8 instruction set, but it's convenient
                 0x0000 => {
                     self.pc += 2;
                 }
@@ -407,5 +407,16 @@ impl Chip8 {
             .into_iter()
             .map(|x| if x { 0xFFFFFFFF } else { 0 })
             .collect();
+    }
+
+    pub fn update_timer(&mut self) -> bool {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+        let must_beep = self.sound_timer == 1;
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
+        return must_beep;
     }
 }
