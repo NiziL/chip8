@@ -29,7 +29,7 @@ fn main() {
     // GUI loop
     while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
         chip8.tick();
-        let must_beep = chip8.update_timer();
+        let _must_beep = chip8.update_timer();
         // TODO beep
 
         // draw graphics from chip8.gfx
