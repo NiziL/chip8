@@ -1,6 +1,5 @@
 mod chip8;
 use minifb;
-use scheduling;
 
 const SCREEN_HZ: f64 = 60.;
 const TIMER_HZ: f64 = 60.;
