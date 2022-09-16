@@ -96,16 +96,9 @@ impl Chip8 {
         // process opcode
         match self.opcode & 0xF000 {
             0x0000 => match self.opcode & 0x0FFF {
-                // 0000 - No operation.
-                // not in official chip8 instruction set, but it's convenient
-                0x0000 => {
-                    self.pc += 2;
-                }
-
                 // 00E0 - Clear the screen.
                 0x00E0 => {
                     self.gfx.fill(false);
-                    self.pc += 2;
                 }
 
                 // 00EE - Returns from a subroutine.
@@ -114,7 +107,7 @@ impl Chip8 {
                         panic!("Stack is empty, cannot return from subroutine");
                     }
                     self.sp -= 1;
-                    self.pc = self.stack[self.sp as usize] + 2;
+                    self.pc = self.stack[self.sp as usize];
                 }
 
                 // 0NNN - Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN.
@@ -124,6 +117,7 @@ impl Chip8 {
             // 1NNN - Jump to address NNN.
             0x1000 => {
                 self.pc = self.opcode & 0x0FFF;
+                self.pc -= 2;
             }
 
             // 2NNN - Calls subroutine at NNN.
@@ -134,6 +128,7 @@ impl Chip8 {
                 self.stack[self.sp as usize] = self.pc;
                 self.sp += 1;
                 self.pc = self.opcode & 0x0FFF;
+                self.pc -= 2;
             }
 
             // 3XNN - Skips next instruction if VX equals NN.
@@ -144,7 +139,6 @@ impl Chip8 {
                 if vx == nn as u8 {
                     self.pc += 2;
                 }
-                self.pc += 2;
             }
 
             // 4XNN - Skips the next instruction if VX does not equals NN.
@@ -155,7 +149,6 @@ impl Chip8 {
                 if vx != nn as u8 {
                     self.pc += 2;
                 }
-                self.pc += 2;
             }
 
             // 5XY0 - Skips the next instruction if VX equals VY.
@@ -167,7 +160,6 @@ impl Chip8 {
                 if vx == vy {
                     self.pc += 2;
                 }
-                self.pc += 2;
             }
 
             // 6XNN - Set VX to NN.
@@ -175,7 +167,6 @@ impl Chip8 {
                 let x = (self.opcode & 0x0F00) >> 8;
                 let nn = self.opcode & 0x00FF;
                 self.reg[x as usize] = nn as u8;
-                self.pc += 2;
             }
 
             // 7XNN - Adds NN to VX (carry flags is not changed).
@@ -184,7 +175,6 @@ impl Chip8 {
                 let nn = self.opcode & 0x00FF;
                 let (value, _) = self.reg[x as usize].overflowing_add(nn as u8);
                 self.reg[x as usize] = value;
-                self.pc += 2;
             }
 
             0x8000 => {
@@ -252,7 +242,6 @@ impl Chip8 {
 
                     _ => panic!("Unknown opcode {:04X}", self.opcode),
                 }
-                self.pc += 2;
             }
 
             // 9XY0 - Skips the next instruction if VX does not equal VY.
@@ -264,19 +253,18 @@ impl Chip8 {
                 if vx != vy {
                     self.pc += 2;
                 }
-                self.pc += 2;
             }
 
             // ANNN - Sets I to the address NNN
             0xA000 => {
                 self.index = self.opcode & 0x0FFF;
-                self.pc += 2;
             }
 
             // BNNN - Jumps to the address NNN plus V0.
             0xB000 => {
                 let nnn = self.opcode & 0x0FFF;
                 self.pc = nnn + self.reg[0] as u16;
+                self.pc -= 2;
             }
 
             // CXNN - Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
@@ -285,7 +273,6 @@ impl Chip8 {
                 let nn = (self.opcode & 0x00FF) as u8;
                 let random: u8 = rand::thread_rng().gen();
                 self.reg[x as usize] = random & nn;
-                self.pc += 2;
             }
 
             // DXYN - Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a
@@ -322,7 +309,6 @@ impl Chip8 {
                         }
                     }
                 }
-                self.pc += 2;
             }
 
             0xE000 => {
@@ -334,7 +320,6 @@ impl Chip8 {
                         if self.key[vx as usize] {
                             self.pc += 2;
                         }
-                        self.pc += 2
                     }
 
                     // EXA1 - Skips the next instruction if the key stored in VX is not pressed.
@@ -342,7 +327,6 @@ impl Chip8 {
                         if !self.key[vx as usize] {
                             self.pc += 2;
                         }
-                        self.pc += 2
                     }
                     _ => panic!("unknown opcode {:04X}", self.opcode),
                 }
@@ -405,12 +389,12 @@ impl Chip8 {
 
                     _ => panic!("unknown opcode {:04X}", self.opcode),
                 }
-                self.pc += 2;
             }
 
             // wildcard to panic
             _ => panic!("unknown opcode {:04X}", self.opcode),
         }
+        self.pc += 2;
     }
 
     pub fn get_gfx_buffer(&self) -> Vec<u32> {
