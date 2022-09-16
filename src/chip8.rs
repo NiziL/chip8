@@ -358,7 +358,12 @@ impl Chip8 {
 
                     // FX0A - A key press is awaited, and then stored in VX.
                     0x000A => {
-                        // TODO, don't know how I will implements this
+                        if let Some(i) = self.key.iter().position(|&v| v) {
+                            self.reg[x as usize] = i as u8;
+                        } else {
+                            // stay in place to await
+                            self.pc -= 2;
+                        }
                     }
 
                     // FX15 - Sets the delay timer to VX.
