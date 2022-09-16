@@ -18,7 +18,7 @@ fn main() {
         chip8::WIDTH,
         chip8::HEIGHT,
         minifb::WindowOptions {
-            scale: minifb::Scale::X16,
+            scale: minifb::Scale::X8,
             scale_mode: minifb::ScaleMode::AspectRatioStretch,
             ..minifb::WindowOptions::default()
         },
@@ -58,7 +58,7 @@ fn main() {
                 minifb::Key::J => chip8.press_key(0xA),
                 minifb::Key::K => chip8.press_key(0x0),
                 minifb::Key::L => chip8.press_key(0xB),
-                minifb::Key::M => chip8.press_key(0xC),
+                minifb::Key::M => chip8.press_key(0xF),
                 _ => {}
             }
         }

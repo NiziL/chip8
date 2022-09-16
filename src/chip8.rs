@@ -169,7 +169,7 @@ impl Chip8 {
                 self.reg[x as usize] = nn as u8;
             }
 
-            // 7XNN - Adds NN to VX (carry flags is not changed).
+            // 7XNN - Adds NN to VX (VF is not changed).
             0x7000 => {
                 let x = (self.opcode & 0x0F00) >> 8;
                 let nn = self.opcode & 0x00FF;
@@ -207,22 +207,22 @@ impl Chip8 {
                     0x0004 => {
                         let (value, overflow) = vx.overflowing_add(vy);
                         self.reg[x as usize] = value;
-                        self.reg[0xF] = if overflow { 1 } else { 0 };
+                        self.reg[0xF] = overflow as u8;
                     }
 
                     // 8XY5 - VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there is not.
                     0x0005 => {
                         let (value, overflow) = vx.overflowing_sub(vy);
                         self.reg[x as usize] = value;
-                        self.reg[0xF] = if overflow { 0 } else { 1 };
+                        self.reg[0xF] = !overflow as u8;
                     }
 
                     // 8XY6 - Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
-                    // !! Ambiguous instruction, instruction changed in CHIP-48 and SUPER-CHIP...
-                    // !! original impl (COSMAC VIP) is VX = VY << 1, it has been changed to VX = VX << 1
+                    // !! Ambiguous instruction, some implementations use VX = VY >> 1, some use VX >>= 1
                     0x0006 => {
                         self.reg[0xF] = vx & 0x01;
-                        self.reg[x as usize] <<= 1;
+                        self.reg[x as usize] >>= 1;
+                        //self.reg[x as usize] = vy >> 1;
                     }
 
                     // 8XY7 - Sets VX to VY minus VX. VF is set to 0 when there's a borrow, and 1 when there is not.
@@ -232,12 +232,12 @@ impl Chip8 {
                         self.reg[0xF] = if overflow { 0 } else { 1 };
                     }
 
-                    // 8XYE - Stores the most significant bit of VX in VF and then shifts VX to the right by 1.
-                    // !! Ambiguous instruction, instruction changed in CHIP-48 and SUPER-CHIP...
-                    // !! original impl (COSMAC VIP) is VX = VY >> 1, it has been changed to VX = VX >> 1
+                    // 8XYE - Stores the most significant bit of VX in VF and then shifts VX to the left by 1.
+                    // !! Ambiguous instruction, some implementations use VX = VY << 1, some use VX <<= 1
                     0x000E => {
                         self.reg[0xF] = vx & 0x80;
-                        self.reg[x as usize] >>= 1;
+                        self.reg[x as usize] <<= 1;
+                        //self.reg[x as usize] = vy << 1;
                     }
 
                     _ => panic!("Unknown opcode {:04X}", self.opcode),
@@ -373,27 +373,30 @@ impl Chip8 {
                         self.mem[(self.index + 2) as usize] = (vx % 100) / 10;
                     }
 
-                    // FX55 - Stores from V0 to VX (including VX) in memory, starting at address I. The offset from I is increased by 1 for each value written, but I itself is left unmodified.
+                    // FX55 - Stores from V0 to VX (including VX) in memory, starting at address I. The offset from I is increased by 1 for each value written.
+                    // !! Ambiguous instruction, some implementations left I inchanged, some left I incremented.
                     0x0055 => {
-                        for i in 0..x {
-                            self.mem[(self.index + i) as usize] = self.reg[i as usize];
-                        }
+                        self.mem[self.index as usize..=(self.index + x) as usize]
+                            .copy_from_slice(&self.reg[0..=x as usize]);
+                        self.index += x + 1;
                     }
 
-                    // FX65 - Fills from V0 to VX (including VX) with values from memory, starting at address I. The offset from I is increased by 1 for each value read, but I itself is left unmodified.
+                    // FX65 - Fills from V0 to VX (including VX) with values from memory, starting at address I. The offset from I is increased by 1 for each value read.
+                    // !! Ambiguous instruction, some implementations left I inchanged, some left I incremented.
                     0x0065 => {
-                        for i in 0..x {
-                            self.reg[i as usize] = self.mem[(self.index + i) as usize];
-                        }
+                        self.reg[0..=x as usize].copy_from_slice(
+                            &self.mem[self.index as usize..=(self.index + x) as usize],
+                        );
+                        self.index += x + 1;
                     }
 
                     _ => panic!("unknown opcode {:04X}", self.opcode),
                 }
             }
 
-            // wildcard to panic
             _ => panic!("unknown opcode {:04X}", self.opcode),
         }
+        // increment PC (opcode is two words)
         self.pc += 2;
     }
 
@@ -409,10 +412,9 @@ impl Chip8 {
         if self.delay_timer > 0 {
             self.delay_timer -= 1;
         }
-        let must_beep = self.sound_timer == 1;
         if self.sound_timer > 0 {
             self.sound_timer -= 1;
         }
-        return must_beep;
+        return self.sound_timer > 0;
     }
 }

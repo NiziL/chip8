@@ -1,4 +1,4 @@
-# chip8-rs
+# chip8
 
 Yet another Chip8 emulator written in Rust, powered by [minifb](https://github.com/emoon/rust_minifb).
 
