@@ -35,7 +35,7 @@ pub struct Chip8 {
 // TODO : handles timers !
 
 pub fn init() -> Chip8 {
-    let chip8 = Chip8 {
+    let mut chip8 = Chip8 {
         mem: [0; MEM_SIZE],
         reg: [0; N_REG],
         stack: [0; STACK_SIZE],
@@ -53,7 +53,8 @@ pub fn init() -> Chip8 {
         sound_timer: 0,
     };
 
-    // TODO load fontset in mem, between 0x050 and 0x0A0
+    // load fontset in mem, between 0x050 and 0x0A0
+    chip8.mem[0x050..0x0A0].copy_from_slice(include_bytes!("fontset.bin"));
     return chip8;
 }
 
@@ -70,9 +71,15 @@ impl Chip8 {
         self.stack = [0u16; 16];
         self.sp = 0x0;
 
-        for i in 0..bytes.len() {
-            self.mem[i + start] = bytes[i]
-        }
+        self.mem[start..start + bytes.len()].copy_from_slice(&bytes);
+    }
+
+    pub fn reset_keypad(&mut self) {
+        self.key.fill(false);
+    }
+
+    pub fn press_key(&mut self, key: usize) {
+        self.key[key] = true;
     }
 
     pub fn tick(&mut self) {
@@ -106,11 +113,11 @@ impl Chip8 {
                     if self.sp == 0 {
                         panic!("Stack is empty, cannot return from subroutine");
                     }
-                    self.pc = self.stack[(self.sp - 1) as usize] + 2;
+                    self.sp -= 1;
+                    self.pc = self.stack[self.sp as usize] + 2;
                 }
 
                 // 0NNN - Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN.
-                // does not implements if you don't want to emulate a COSMAC VIP
                 _ => panic!("0NNN not implemented (opcode {:04X})", self.opcode),
             },
 
@@ -125,8 +132,8 @@ impl Chip8 {
                     panic!("Stack is full, cannot call subroutine");
                 }
                 self.stack[self.sp as usize] = self.pc;
-                self.pc = self.opcode & 0x0FFF;
                 self.sp += 1;
+                self.pc = self.opcode & 0x0FFF;
             }
 
             // 3XNN - Skips next instruction if VX equals NN.
