@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 minifb = "0.23.0"
 rand = "0.8.5"
+periodic = "0.1.1"
