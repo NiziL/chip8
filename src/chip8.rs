@@ -25,6 +25,7 @@ pub struct Chip8 {
     sp: u16,
 
     gfx: [bool; WIDTH * HEIGHT],
+    draw_flag: bool,
 
     key: [bool; N_KEY],
 
@@ -46,6 +47,7 @@ pub fn init() -> Chip8 {
         sp: 0,
 
         gfx: [false; WIDTH * HEIGHT],
+        draw_flag: false,
 
         key: [false; N_KEY],
 
@@ -99,6 +101,7 @@ impl Chip8 {
                 // 00E0 - Clear the screen.
                 0x00E0 => {
                     self.gfx.fill(false);
+                    self.draw_flag = true;
                 }
 
                 // 00EE - Returns from a subroutine.
@@ -309,6 +312,7 @@ impl Chip8 {
                         }
                     }
                 }
+                self.draw_flag = true;
             }
 
             0xE000 => {
@@ -400,12 +404,17 @@ impl Chip8 {
         self.pc += 2;
     }
 
-    pub fn get_gfx_buffer(&self) -> Vec<u32> {
+    pub fn get_gfx_buffer(&mut self) -> Vec<u32> {
+        self.draw_flag = false;
         return self
             .gfx
             .into_iter()
             .map(|x| if x { 0xFFFFFFFF } else { 0 })
             .collect();
+    }
+
+    pub fn get_draw_flag(&self) -> bool {
+        return self.draw_flag;
     }
 
     pub fn update_timer(&mut self) -> bool {

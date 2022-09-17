@@ -1,10 +1,6 @@
 mod chip8;
 use minifb;
 
-//const SCREEN_HZ: f64 = 60.;
-//const TIMER_HZ: f64 = 60.;
-//const CPU_HZ: f64 = 60.;
-
 fn main() {
     // get command line arguments
     let args: Vec<String> = std::env::args().collect();
@@ -24,7 +20,6 @@ fn main() {
         },
     )
     .unwrap_or_else(|e| panic!("{}", e));
-    //window.limit_update_rate(Some(std::time::Duration::from_secs_f64(1. / SCREEN_HZ)));
 
     // GUI loop
     while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
@@ -33,9 +28,11 @@ fn main() {
         // TODO beep
 
         // draw graphics from chip8.gfx
-        window
-            .update_with_buffer(&chip8.get_gfx_buffer(), chip8::WIDTH, chip8::HEIGHT)
-            .unwrap();
+        if chip8.get_draw_flag() {
+            window
+                .update_with_buffer(&chip8.get_gfx_buffer(), chip8::WIDTH, chip8::HEIGHT)
+                .unwrap();
+        }
 
         // update key press state
         // minifb cannot detect KeyX from an azerty keyboard
