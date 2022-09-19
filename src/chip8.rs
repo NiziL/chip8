@@ -38,8 +38,8 @@ pub struct Chip8 {
 }
 
 impl Chip8 {
-    pub const fn init() -> Chip8 {
-        Chip8 {
+    pub fn init(bytes: Vec<u8>) -> Chip8 {
+        let mut chip8 = Chip8 {
             mem: [0; MEM_SIZE],
             reg: [0; N_REG],
             stack: [0; STACK_SIZE],
@@ -56,18 +56,15 @@ impl Chip8 {
 
             delay_timer: 0,
             sound_timer: 0,
-        }
-    }
-
-    pub fn load_rom(&mut self, bytes: Vec<u8>) {
-        if bytes.len() > self.mem.len() - START_ROM {
+        };
+        // load fontset
+        chip8.mem[START_FONT..END_FONT].copy_from_slice(include_bytes!("fontset.bin"));
+        // load rom
+        if bytes.len() > chip8.mem.len() - START_ROM {
             panic!("ROM is too big");
         }
-
-        // load fontset
-        self.mem[START_FONT..END_FONT].copy_from_slice(include_bytes!("fontset.bin"));
-        // load rom
-        self.mem[START_ROM..START_ROM + bytes.len()].copy_from_slice(&bytes);
+        chip8.mem[START_ROM..START_ROM + bytes.len()].copy_from_slice(&bytes);
+        return chip8;
     }
 
     pub fn reset_keypad(&mut self) {

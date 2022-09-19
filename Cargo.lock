@@ -37,7 +37,6 @@ name = "chip8"
 version = "0.1.0"
 dependencies = [
  "minifb",
- "periodic",
  "rand",
 ]
 
@@ -321,12 +320,6 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
 ]
-
-[[package]]
-name = "periodic"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3078871d84bbf2d85e4a69527169df35df811aa86e1abf77af6be496888026aa"
 
 [[package]]
 name = "pin-project-lite"
