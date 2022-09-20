@@ -75,10 +75,6 @@ impl Chip8 {
         self.key[key] = true;
     }
 
-    pub fn release_key(&mut self, key: usize) {
-        self.key[key] = false;
-    }
-
     pub fn tick(&mut self) {
         // check if pc overflow
         if self.pc >= MEM_SIZE as u16 {

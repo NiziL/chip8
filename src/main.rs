@@ -49,8 +49,7 @@ fn main() {
         if elapsed < cpu_duration {
             thread::sleep(cpu_duration - elapsed);
         } else {
-            //panic!("CPU frequency cannot be respected !");
-            println!("CPU freq fucked up")
+            eprintln!("CPU frequency has been messed up");
         }
     });
 
@@ -67,11 +66,11 @@ fn main() {
         if elapsed < timer_duration {
             thread::sleep(timer_duration - elapsed);
         } else {
-            //panic!("Timer frequency cannot be respected !");
-            println!("Timer freq fucked up");
+            eprintln!("Timers frequency has been messed up");
         }
     });
 
+    // GUI & keypad update loop
     while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
         if let Ok(gfx) = gfx_receiver.recv_timeout(win_duration) {
             window
