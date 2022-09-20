@@ -7,6 +7,10 @@ pub const MEM_SIZE: usize = 4096;
 pub const STACK_SIZE: usize = 16;
 pub const N_KEY: usize = 16;
 
+const START_ROM: usize = 0x0200;
+const START_FONT: usize = 0x0050;
+const END_FONT: usize = 0x00A0;
+
 #[derive(Debug)]
 pub struct Chip8 {
     /*
@@ -33,47 +37,34 @@ pub struct Chip8 {
     sound_timer: u8,
 }
 
-// TODO : handles timers !
-
-pub fn init() -> Chip8 {
-    let mut chip8 = Chip8 {
-        mem: [0; MEM_SIZE],
-        reg: [0; N_REG],
-        stack: [0; STACK_SIZE],
-
-        opcode: 0,
-        index: 0,
-        pc: 0,
-        sp: 0,
-
-        gfx: [false; WIDTH * HEIGHT],
-        draw_flag: false,
-
-        key: [false; N_KEY],
-
-        delay_timer: 0,
-        sound_timer: 0,
-    };
-
-    // load fontset in mem, between 0x050 and 0x0A0
-    chip8.mem[0x050..0x0A0].copy_from_slice(include_bytes!("fontset.bin"));
-    return chip8;
-}
-
 impl Chip8 {
-    pub fn load_rom(&mut self, bytes: Vec<u8>) {
-        let start = 0x0200;
+    pub fn init(bytes: Vec<u8>) -> Chip8 {
+        let mut chip8 = Chip8 {
+            mem: [0; MEM_SIZE],
+            reg: [0; N_REG],
+            stack: [0; STACK_SIZE],
 
-        if bytes.len() > self.mem.len() - start {
+            opcode: 0,
+            index: 0,
+            pc: START_ROM as u16,
+            sp: 0,
+
+            gfx: [false; WIDTH * HEIGHT],
+            draw_flag: false,
+
+            key: [false; N_KEY],
+
+            delay_timer: 0,
+            sound_timer: 0,
+        };
+        // load fontset
+        chip8.mem[START_FONT..END_FONT].copy_from_slice(include_bytes!("fontset.bin"));
+        // load rom
+        if bytes.len() > chip8.mem.len() - START_ROM {
             panic!("ROM is too big");
         }
-
-        self.pc = start as u16;
-        self.index = 0x0;
-        self.stack = [0u16; 16];
-        self.sp = 0x0;
-
-        self.mem[start..start + bytes.len()].copy_from_slice(&bytes);
+        chip8.mem[START_ROM..START_ROM + bytes.len()].copy_from_slice(&bytes);
+        return chip8;
     }
 
     pub fn reset_keypad(&mut self) {

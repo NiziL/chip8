@@ -1,14 +1,17 @@
 mod chip8;
 use minifb;
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
+use std::time;
 
 fn main() {
     // get command line arguments
     let args: Vec<String> = std::env::args().collect();
     // Chip8 system
-    let mut chip8 = chip8::init();
-    chip8.load_rom(std::fs::read(&args[1]).unwrap());
+    let chip8: chip8::Chip8 = chip8::Chip8::init(std::fs::read(&args[1]).unwrap());
+    let chip8lock = Arc::new(Mutex::new(chip8));
 
-    // setup graphics and input
+    // setup graphics
     let mut window = minifb::Window::new(
         "Chip8 Emulator",
         chip8::WIDTH,
@@ -19,24 +22,60 @@ fn main() {
             ..minifb::WindowOptions::default()
         },
     )
-    .unwrap_or_else(|e| panic!("{}", e));
+    .unwrap();
 
-    // GUI loop
-    while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
+    let cpu_duration = time::Duration::from_secs_f64(1. / 500.);
+    let timer_duration = time::Duration::from_secs_f64(1. / 60.);
+
+    let (gfx_transmitter, gfx_receiver) = mpsc::channel();
+
+    let cpu_lock = Arc::clone(&chip8lock);
+    thread::spawn(move || loop {
+        let now = time::Instant::now();
+
+        let mut chip8 = cpu_lock.lock().unwrap();
+        println!("cpu tick");
         chip8.tick();
-        let _must_beep = chip8.update_timer();
-        // TODO beep
-
-        // draw graphics from chip8.gfx
         if chip8.get_draw_flag() {
-            window
-                .update_with_buffer(&chip8.get_gfx_buffer(), chip8::WIDTH, chip8::HEIGHT)
-                .unwrap();
+            gfx_transmitter.send(chip8.get_gfx_buffer()).unwrap();
         }
+        drop(chip8);
 
-        // update key press state
-        // minifb cannot detect KeyX from an azerty keyboard
-        // alternative solution : AZER QSDF UIOP JKLM ?
+        let elapsed = now.elapsed();
+        if elapsed < cpu_duration {
+            thread::sleep(cpu_duration - elapsed);
+        } else {
+            //panic!("CPU frequency cannot be respected !");
+            println!("CPU freq fucked up")
+        }
+    });
+
+    let timer_lock = Arc::clone(&chip8lock);
+    thread::spawn(move || loop {
+        let now = time::Instant::now();
+
+        let mut chip8 = timer_lock.lock().unwrap();
+        println!("timer tick");
+        let _must_beep = chip8.update_timer();
+        drop(chip8);
+        // TODO start/stop beep
+
+        let elapsed = now.elapsed();
+        if elapsed < timer_duration {
+            thread::sleep(timer_duration - elapsed);
+        } else {
+            //panic!("Timer frequency cannot be respected !");
+            println!("Timer freq fucked up");
+        }
+    });
+
+    let keypad_lock = Arc::clone(&chip8lock);
+    for gfx in gfx_receiver {
+        println!("receive a gfx");
+        window
+            .update_with_buffer(&gfx, chip8::WIDTH, chip8::HEIGHT)
+            .unwrap();
+        let mut chip8 = keypad_lock.lock().unwrap();
         chip8.reset_keypad();
         for key in window.get_keys() {
             match key {
