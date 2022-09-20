@@ -49,7 +49,10 @@ fn main() {
         if elapsed < cpu_duration {
             thread::sleep(cpu_duration - elapsed);
         } else {
-            eprintln!("CPU frequency has been messed up");
+            eprintln!(
+                "CPU frequency has been messed up (duration {:?} instead of {:?})",
+                elapsed, cpu_duration
+            );
         }
     });
 
@@ -66,7 +69,10 @@ fn main() {
         if elapsed < timer_duration {
             thread::sleep(timer_duration - elapsed);
         } else {
-            eprintln!("Timers frequency has been messed up");
+            eprintln!(
+                "Timers frequency has been messed up (duration {:?} instead of {:?})",
+                elapsed, timer_duration
+            );
         }
     });
 
