@@ -365,7 +365,7 @@ impl Chip8 {
                         let vx = self.reg[x as usize];
                         self.mem[self.index as usize] = vx / 100;
                         self.mem[(self.index + 1) as usize] = (vx / 10) % 10;
-                        self.mem[(self.index + 2) as usize] = (vx % 100) / 10;
+                        self.mem[(self.index + 2) as usize] = vx % 10;
                     }
 
                     // FX55 - Stores from V0 to VX (including VX) in memory, starting at address I. The offset from I is increased by 1 for each value written.
