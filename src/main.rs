@@ -12,7 +12,10 @@ fn main() {
     // get command line arguments
     let args: Vec<String> = std::env::args().collect();
     // Init chip8 system
-    let chip8: chip8::Chip8 = chip8::Chip8::init(std::fs::read(&args[1]).unwrap());
+    let mut chip8: chip8::Chip8 = chip8::init();
+    // Load ROM
+    chip8.load_rom(std::fs::read(&args[1]).unwrap());
+    // Create mutex lock
     let chip8lock = Arc::new(Mutex::new(chip8));
 
     // Init minifb window
