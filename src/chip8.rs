@@ -344,7 +344,7 @@ impl Chip8 {
 
                     // FX0A - A key press is awaited, and then stored in VX.
                     0x000A => {
-                        if let Some(i) = self.key.iter().position(|&v| v) {
+                        if let Some(i) = self.key.into_iter().position(|v| v) {
                             self.reg[x as usize] = i as u8;
                         } else {
                             // stay in place to await
@@ -402,13 +402,14 @@ impl Chip8 {
         self.pc += 2;
     }
 
-    pub fn get_gfx_buffer(&mut self) -> Vec<u32> {
+    pub fn get_gfx_buffer(&mut self) -> [bool; 2048] {
         self.draw_flag = false;
-        return self
-            .gfx
-            .into_iter()
-            .map(|x| if x { 0xFFFFFFFF } else { 0 })
-            .collect();
+        return self.gfx;
+        //return self
+        //    .gfx
+        //    .into_iter()
+        //    .map(|x| if x { 0xFFFFFFFF } else { 0 })
+        //    .collect();
     }
 
     pub fn get_draw_flag(&self) -> bool {

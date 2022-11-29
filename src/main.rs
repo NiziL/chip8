@@ -82,8 +82,12 @@ fn main() {
     // GUI & keypad update loop
     while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
         if let Ok(gfx) = gfx_receiver.recv_timeout(win_duration) {
+            let buffer: Vec<u32> = gfx
+                .into_iter()
+                .map(|x| if x { 0xFFFFFFFF } else { 0 })
+                .collect();
             window
-                .update_with_buffer(&gfx, chip8::WIDTH, chip8::HEIGHT)
+                .update_with_buffer(&buffer, chip8::WIDTH, chip8::HEIGHT)
                 .unwrap();
         } else {
             window.update();
