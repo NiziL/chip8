@@ -23,7 +23,6 @@ pub struct Chip8 {
     reg: [u8; N_REG],
     stack: [u16; STACK_SIZE],
 
-    opcode: u16,
     index: u16,
     pc: u16,
     sp: u16,
@@ -43,7 +42,6 @@ pub fn init() -> Chip8 {
         reg: [0; N_REG],
         stack: [0; STACK_SIZE],
 
-        opcode: 0,
         index: 0,
         pc: START_ROM as u16,
         sp: 0,
@@ -89,13 +87,17 @@ impl Chip8 {
         }
 
         // fetch opcode
-        let op1 = (self.mem[self.pc as usize] as u16) << 8;
-        let op2 = self.mem[(self.pc + 1) as usize] as u16;
-        self.opcode = op1 | op2;
+        //let op1 = (self.mem[self.pc as usize] as u16) << 8;
+        //let op2 = self.mem[(self.pc + 1) as usize] as u16;
+        let opcode = u16::from_be_bytes(
+            self.mem[self.pc as usize..(self.pc + 2) as usize]
+                .try_into()
+                .unwrap(),
+        );
 
         // process opcode
-        match self.opcode & 0xF000 {
-            0x0000 => match self.opcode & 0x0FFF {
+        match opcode & 0xF000 {
+            0x0000 => match opcode & 0x0FFF {
                 // 00E0 - Clear the screen.
                 0x00E0 => {
                     self.gfx.fill(false);
@@ -112,12 +114,12 @@ impl Chip8 {
                 }
 
                 // 0NNN - Calls machine code routine (RCA 1802 for COSMAC VIP) at address NNN.
-                _ => panic!("0NNN not implemented (opcode {:04X})", self.opcode),
+                _ => panic!("0NNN not implemented (opcode {:04X})", opcode),
             },
 
             // 1NNN - Jump to address NNN.
             0x1000 => {
-                self.pc = self.opcode & 0x0FFF;
+                self.pc = opcode & 0x0FFF;
                 self.pc -= 2;
             }
 
@@ -128,15 +130,15 @@ impl Chip8 {
                 }
                 self.stack[self.sp as usize] = self.pc;
                 self.sp += 1;
-                self.pc = self.opcode & 0x0FFF;
+                self.pc = opcode & 0x0FFF;
                 self.pc -= 2;
             }
 
             // 3XNN - Skips next instruction if VX equals NN.
             0x3000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
+                let x = (opcode & 0x0F00) >> 8;
                 let vx = self.reg[x as usize];
-                let nn = self.opcode & 0x00FF;
+                let nn = opcode & 0x00FF;
                 if vx == nn as u8 {
                     self.pc += 2;
                 }
@@ -144,9 +146,9 @@ impl Chip8 {
 
             // 4XNN - Skips the next instruction if VX does not equals NN.
             0x4000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
+                let x = (opcode & 0x0F00) >> 8;
                 let vx = self.reg[x as usize];
-                let nn = self.opcode & 0x00FF;
+                let nn = opcode & 0x00FF;
                 if vx != nn as u8 {
                     self.pc += 2;
                 }
@@ -154,9 +156,9 @@ impl Chip8 {
 
             // 5XY0 - Skips the next instruction if VX equals VY.
             0x5000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
+                let x = (opcode & 0x0F00) >> 8;
                 let vx = self.reg[x as usize];
-                let y = (self.opcode & 0x00F0) >> 4;
+                let y = (opcode & 0x00F0) >> 4;
                 let vy = self.reg[y as usize];
                 if vx == vy {
                     self.pc += 2;
@@ -165,25 +167,25 @@ impl Chip8 {
 
             // 6XNN - Set VX to NN.
             0x6000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
-                let nn = self.opcode & 0x00FF;
+                let x = (opcode & 0x0F00) >> 8;
+                let nn = opcode & 0x00FF;
                 self.reg[x as usize] = nn as u8;
             }
 
             // 7XNN - Adds NN to VX (VF is not changed).
             0x7000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
-                let nn = self.opcode & 0x00FF;
+                let x = (opcode & 0x0F00) >> 8;
+                let nn = opcode & 0x00FF;
                 let (value, _) = self.reg[x as usize].overflowing_add(nn as u8);
                 self.reg[x as usize] = value;
             }
 
             0x8000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
+                let x = (opcode & 0x0F00) >> 8;
                 let vx = self.reg[x as usize];
-                let y = (self.opcode & 0x00F0) >> 4;
+                let y = (opcode & 0x00F0) >> 4;
                 let vy = self.reg[y as usize];
-                match self.opcode & 0x000F {
+                match opcode & 0x000F {
                     // 8XY0 - Sets VX to the value of VY.
                     0x0000 => {
                         self.reg[x as usize] = vy;
@@ -241,15 +243,15 @@ impl Chip8 {
                         //self.reg[x as usize] = vy << 1;
                     }
 
-                    _ => panic!("Unknown opcode {:04X}", self.opcode),
+                    _ => panic!("Unknown opcode {:04X}", opcode),
                 }
             }
 
             // 9XY0 - Skips the next instruction if VX does not equal VY.
             0x9000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
+                let x = (opcode & 0x0F00) >> 8;
                 let vx = self.reg[x as usize];
-                let y = (self.opcode & 0x00F0) >> 4;
+                let y = (opcode & 0x00F0) >> 4;
                 let vy = self.reg[y as usize];
                 if vx != vy {
                     self.pc += 2;
@@ -258,20 +260,20 @@ impl Chip8 {
 
             // ANNN - Sets I to the address NNN
             0xA000 => {
-                self.index = self.opcode & 0x0FFF;
+                self.index = opcode & 0x0FFF;
             }
 
             // BNNN - Jumps to the address NNN plus V0.
             0xB000 => {
-                let nnn = self.opcode & 0x0FFF;
+                let nnn = opcode & 0x0FFF;
                 self.pc = nnn + self.reg[0] as u16;
                 self.pc -= 2;
             }
 
             // CXNN - Sets VX to the result of a bitwise and operation on a random number (Typically: 0 to 255) and NN.
             0xC000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
-                let nn = (self.opcode & 0x00FF) as u8;
+                let x = (opcode & 0x0F00) >> 8;
+                let nn = (opcode & 0x00FF) as u8;
                 let random: u8 = rand::thread_rng().gen();
                 self.reg[x as usize] = random & nn;
             }
@@ -282,11 +284,11 @@ impl Chip8 {
             // set to 1 if any screen pixels are flipped from set to unset when the sprite is
             // drawn, and to 0 if that does not happen.
             0xD000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
+                let x = (opcode & 0x0F00) >> 8;
                 let vx = (self.reg[x as usize] & (WIDTH as u8 - 1)) as usize; // modulo 64
-                let y = (self.opcode & 0x00F0) >> 4;
+                let y = (opcode & 0x00F0) >> 4;
                 let vy = (self.reg[y as usize] & (HEIGHT as u8 - 1)) as usize; // modulo 32
-                let n = (self.opcode & 0x000F) as usize;
+                let n = (opcode & 0x000F) as usize;
 
                 self.reg[0xF] = 0;
 
@@ -314,9 +316,9 @@ impl Chip8 {
             }
 
             0xE000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
+                let x = (opcode & 0x0F00) >> 8;
                 let vx = self.reg[x as usize];
-                match self.opcode & 0x00FF {
+                match opcode & 0x00FF {
                     // EX9E - Skips the next instruction if the key stored in VX is pressed.
                     0x009E => {
                         if self.key[vx as usize] {
@@ -330,13 +332,13 @@ impl Chip8 {
                             self.pc += 2;
                         }
                     }
-                    _ => panic!("unknown opcode {:04X}", self.opcode),
+                    _ => panic!("unknown opcode {:04X}", opcode),
                 }
             }
 
             0xF000 => {
-                let x = (self.opcode & 0x0F00) >> 8;
-                match self.opcode & 0x00FF {
+                let x = (opcode & 0x0F00) >> 8;
+                match opcode & 0x00FF {
                     // FX07 - Sets VX to the value of the delay timer.
                     0x0007 => {
                         self.reg[x as usize] = self.delay_timer;
@@ -392,11 +394,11 @@ impl Chip8 {
                         self.index += x + 1;
                     }
 
-                    _ => panic!("unknown opcode {:04X}", self.opcode),
+                    _ => panic!("unknown opcode {:04X}", opcode),
                 }
             }
 
-            _ => panic!("unknown opcode {:04X}", self.opcode),
+            _ => panic!("unknown opcode {:04X}", opcode),
         }
         // increment PC (opcode is two words)
         self.pc += 2;
