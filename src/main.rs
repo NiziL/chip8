@@ -43,8 +43,8 @@ fn main() {
 
         let mut chip8 = cpu_lock.lock().unwrap();
         chip8.tick();
-        if chip8.get_draw_flag() {
-            gfx_transmitter.send(chip8.get_gfx_buffer()).unwrap();
+        if chip8.draw_flag() {
+            gfx_transmitter.send(chip8.gfx_buffer()).unwrap();
         }
         drop(chip8);
 
