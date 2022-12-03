@@ -1,7 +1,6 @@
 use super::opcodes::InstructionSet;
+use super::{HEIGHT, WIDTH};
 
-pub const WIDTH: usize = 64;
-pub const HEIGHT: usize = 32;
 const N_REG: usize = 16;
 const MEM_SIZE: usize = 4096;
 const STACK_SIZE: usize = 16;
@@ -67,17 +66,17 @@ impl Chip8 {
         self.mem[START_ROM..START_ROM + bytes.len()].copy_from_slice(&bytes);
     }
 
-    pub fn reset(&mut self) {
-        self.mem.fill(0);
-        self.mem[START_FONT..END_FONT].copy_from_slice(include_bytes!("fontset.bin"));
-        self.pc = START_ROM as u16;
-        self.index = 0;
-        self.sp = 0;
-        self.reset_gfx();
-        self.reset_keypad();
-        self.sound_timer = 0;
-        self.delay_timer = 0;
-    }
+    //pub fn reset(&mut self) {
+    //    self.mem.fill(0);
+    //    self.mem[START_FONT..END_FONT].copy_from_slice(include_bytes!("fontset.bin"));
+    //    self.pc = START_ROM as u16;
+    //    self.index = 0;
+    //    self.sp = 0;
+    //    self.reset_gfx();
+    //    self.reset_keypad();
+    //    self.sound_timer = 0;
+    //    self.delay_timer = 0;
+    //}
 
     pub fn keypad(&self) -> [bool; N_KEY] {
         self.key
@@ -142,9 +141,9 @@ impl Chip8 {
         self.delay_timer = value;
     }
 
-    pub fn sound_timer(&self) -> u8 {
-        self.sound_timer
-    }
+    //pub fn sound_timer(&self) -> u8 {
+    //    self.sound_timer
+    //}
 
     pub fn set_sound_timer(&mut self, value: u8) {
         self.sound_timer = value;

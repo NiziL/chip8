@@ -1,4 +1,4 @@
-use crate::chip8::{Chip8, HEIGHT, WIDTH};
+use super::{Chip8, HEIGHT, WIDTH};
 use rand::Rng;
 
 pub trait InstructionSet {
@@ -126,7 +126,7 @@ impl InstructionSet for Chip8 {
     }
 
     // Ambiguous instruction, some implementations use VX = VY >> 1, some use VX >>= 1
-    fn process_8xy6(&mut self, x: usize, y: usize) {
+    fn process_8xy6(&mut self, x: usize, _y: usize) {
         self.set_register(0xF, self.register(x) & 0x01);
         self.set_register(x, self.register(x) >> 1);
         //self.set_register(x, self.register(y) >> 1);
@@ -141,7 +141,7 @@ impl InstructionSet for Chip8 {
     }
 
     // Ambiguous instruction, some implementations use VX = VY << 1, some use VX <<= 1
-    fn process_8xye(&mut self, x: usize, y: usize) {
+    fn process_8xye(&mut self, x: usize, _y: usize) {
         self.set_register(0xF, self.register(x) & 0x80);
         self.set_register(x, self.register(x) << 1);
         //self.set_register(x, self.register(y) << 1);
