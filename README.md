@@ -2,7 +2,7 @@
 
 Yet another Chip8 emulator written in Rust, powered by [minifb](https://github.com/emoon/rust_minifb) and [rand](https://github.com/rust-random/rand).
 
-Many thanks to Tobias V. Langhoff for [his great blog post](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/), and to jellysquid3 for [the inspiration and the fontset](https://github.com/jellysquid3/chip8-rs).
+Many thanks to Tobias V. Langhoff for [his great blog post](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/), to jellysquid3 for [the inspiration and the fontset](https://github.com/jellysquid3/chip8-rs) and to starrhorne for [the inspiration](https://github.com/starrhorne/chip8-rust).
 
 ## Usage
 
