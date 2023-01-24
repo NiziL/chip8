@@ -218,11 +218,8 @@ impl InstructionSet for Chip8 {
     }
 
     fn process_fx0a(&mut self, x: usize) {
-        if let Some(i) = self.keypad().iter().position(|&v| v) {
-            self.set_register(x, i as u8);
-            self.next_instruction();
-        }
-        // stay in place to await, no pc increments
+        self.wait_for_key_press(x);
+        self.next_instruction();
     }
 
     fn process_fx15(&mut self, x: usize) {

@@ -33,6 +33,9 @@ pub struct Chip8 {
 
     delay_timer: u8,
     sound_timer: u8,
+
+    waiting_key: bool,
+    waiting_reg: usize,
 }
 
 pub fn init() -> Chip8 {
@@ -52,6 +55,9 @@ pub fn init() -> Chip8 {
 
         delay_timer: 0,
         sound_timer: 0,
+
+        waiting_key: true,
+        waiting_reg: 0,
     };
     // load fontset
     chip8.mem[START_FONT..END_FONT].copy_from_slice(include_bytes!("fontset.bin"));
@@ -66,20 +72,18 @@ impl Chip8 {
         self.mem[START_ROM..START_ROM + bytes.len()].copy_from_slice(&bytes);
     }
 
-    //pub fn reset(&mut self) {
-    //    self.mem.fill(0);
-    //    self.mem[START_FONT..END_FONT].copy_from_slice(include_bytes!("fontset.bin"));
-    //    self.pc = START_ROM as u16;
-    //    self.index = 0;
-    //    self.sp = 0;
-    //    self.reset_gfx();
-    //    self.reset_keypad();
-    //    self.sound_timer = 0;
-    //    self.delay_timer = 0;
-    //}
-
-    pub fn keypad(&self) -> [bool; N_KEY] {
-        self.key
+    pub fn reset(&mut self) {
+        self.mem.fill(0);
+        self.mem[START_FONT..END_FONT].copy_from_slice(include_bytes!("fontset.bin"));
+        self.pc = START_ROM as u16;
+        self.index = 0;
+        self.sp = 0;
+        self.reset_gfx();
+        self.reset_keypad();
+        self.sound_timer = 0;
+        self.delay_timer = 0;
+        self.waiting_key = false;
+        self.waiting_reg = 0;
     }
 
     pub fn reset_keypad(&mut self) {
@@ -88,6 +92,10 @@ impl Chip8 {
 
     pub fn press_key(&mut self, key: usize) {
         self.key[key] = true;
+        if self.waiting_key {
+            self.waiting_key = false;
+            self.reg[self.waiting_reg] = key as u8;
+        }
     }
 
     pub fn is_key_down(&self, key: usize) -> bool {
@@ -209,7 +217,17 @@ impl Chip8 {
         self.index += n as u16 + 1;
     }
 
+    pub fn wait_for_key_press(&mut self, reg: usize) {
+        self.waiting_key = true;
+        self.waiting_reg = reg;
+    }
+
     pub fn tick(&mut self) {
+        // do nothing if it's waiting for a key press
+        if self.waiting_key {
+            return;
+        }
+
         // check if pc overflow
         if self.pc >= MEM_SIZE as u16 {
             panic!("PC points outside of the memory");
